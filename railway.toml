@@ -1,9 +1,2 @@
-[build]
-builder = "nixpacks"
-watchPatterns = ["backend/**"]
-
-[build.nixpacks]
-configPath = "backend/nixpacks.toml"
-
 [deploy]
 startCommand = "cd backend && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
