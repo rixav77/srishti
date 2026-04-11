@@ -145,15 +145,4 @@
 
 ---
 
-## How to Work in Parallel
 
-```
-Person A (Data)     → Phase 1A (scraping scripts + dataset)
-Person B (Backend)  → Phase 1B (DB tables + Pinecone)
-Person C (Backend)  → Phase 2A agents (sponsor + speaker)
-Person D (Backend)  → Phase 2A agents (venue + exhibitor)
-Person E (Frontend) → Phase 3 (Next.js setup + wizard + dashboard)
-```
-
-Each person clones the repo, works on their files, and pushes to a feature branch.
-Merge to main when ready.
