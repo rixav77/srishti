@@ -24,13 +24,13 @@ User Input → Orchestrator → 7 AI Agents (parallel) → Consolidated Event Pl
 
 | Component | Technology |
 |-----------|-----------|
-| LLM | Groq (Llama 3.3 70B) - Free |
-| Embeddings | BGE-M3 (local) - Free |
+| LLM | Groq (Llama 3.3 70B)|
+| Embeddings | BGE-M3 (local)|
 | Backend | FastAPI (Python) |
 | Frontend | Next.js 14 + Tailwind + shadcn/ui |
-| Database | Supabase (PostgreSQL) - Free |
-| Vector DB | Pinecone - Free |
-| Cache | Upstash Redis - Free |
+| Database | Supabase (PostgreSQL)|
+| Vector DB | Pinecone  |
+| Cache | Upstash Redis  |
 | Orchestration | LangGraph |
 
 ## Setup
