@@ -1,0 +1,78 @@
+domain: music_festival
+display_name: "Music Festival"
+
+entity_mappings:
+  talent: "Artist"
+  funder: "Sponsor"
+  exhibitor: "Vendor"
+  location: "Festival Grounds"
+  attendee: "Festival-goer"
+
+sponsor_tiers:
+  - name: "Headliner Sponsor"
+    min_budget: 200000
+  - name: "Main Stage"
+    min_budget: 100000
+  - name: "Side Stage"
+    min_budget: 30000
+  - name: "Supporting"
+    min_budget: 10000
+
+pricing_model: "ticket"
+ticket_types:
+  - "Early Bird GA"
+  - "General Admission"
+  - "VIP"
+  - "Backstage Pass"
+
+scoring_weights:
+  sponsor:
+    industry_relevance: 0.25
+    historical_sponsorship: 0.25
+    budget_relevance: 0.20
+    sponsoring_frequency: 0.15
+    track_record: 0.15
+  speaker:
+    topic_relevance: 0.30
+    speaking_history: 0.20
+    influence: 0.35
+    past_participation: 0.15
+  exhibitor:
+    industry_fit: 0.25
+    exhibition_history: 0.25
+    company_stage: 0.15
+    marketing_activity: 0.20
+    geographic_presence: 0.15
+  venue:
+    capacity_fit: 0.30
+    budget_fit: 0.20
+    location_quality: 0.15
+    past_event_track_record: 0.15
+    amenities: 0.10
+    availability: 0.10
+
+scraping_sources:
+  events:
+    - "songkick.com"
+    - "bandsintown.com"
+    - "festicket.com"
+    - "jambase.com"
+  sponsors:
+    - "crunchbase.com"
+    - "music-business-worldwide.com"
+  speakers:
+    - "spotify.com/artists"
+    - "instagram.com"
+    - "soundcloud.com"
+  venues:
+    - "google.com/maps"
+
+community_channels:
+  primary:
+    - "Instagram"
+    - "TikTok"
+    - "Twitter/X"
+  secondary:
+    - "Reddit r/festivals"
+    - "Facebook groups"
+    - "Spotify playlists"

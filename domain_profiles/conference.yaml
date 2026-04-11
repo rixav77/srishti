@@ -1,0 +1,81 @@
+domain: conference
+display_name: "Tech Conference"
+
+entity_mappings:
+  talent: "Speaker"
+  funder: "Sponsor"
+  exhibitor: "Exhibitor"
+  location: "Venue"
+  attendee: "Attendee"
+
+sponsor_tiers:
+  - name: "Title"
+    min_budget: 100000
+  - name: "Gold"
+    min_budget: 50000
+  - name: "Silver"
+    min_budget: 20000
+  - name: "Bronze"
+    min_budget: 5000
+
+pricing_model: "registration"
+ticket_types:
+  - "Super Early Bird"
+  - "Early Bird"
+  - "Regular"
+  - "VIP"
+  - "Student"
+
+scoring_weights:
+  sponsor:
+    industry_relevance: 0.30
+    historical_sponsorship: 0.25
+    budget_relevance: 0.20
+    sponsoring_frequency: 0.15
+    track_record: 0.10
+  speaker:
+    topic_relevance: 0.35
+    speaking_history: 0.25
+    influence: 0.25
+    past_participation: 0.15
+  exhibitor:
+    industry_fit: 0.30
+    exhibition_history: 0.25
+    company_stage: 0.20
+    marketing_activity: 0.15
+    geographic_presence: 0.10
+  venue:
+    capacity_fit: 0.25
+    budget_fit: 0.20
+    location_quality: 0.20
+    past_event_track_record: 0.15
+    amenities: 0.10
+    availability: 0.10
+
+scraping_sources:
+  events:
+    - "conf.tech"
+    - "eventbrite.com"
+    - "luma.com"
+    - "10times.com"
+    - "dev.events"
+  sponsors:
+    - "crunchbase.com"
+    - "linkedin.com/company"
+  speakers:
+    - "linkedin.com"
+    - "sessionize.com"
+    - "papercall.io"
+  venues:
+    - "google.com/maps"
+    - "venuefinder.com"
+
+community_channels:
+  primary:
+    - "LinkedIn"
+    - "Twitter/X"
+    - "Reddit"
+  secondary:
+    - "Discord"
+    - "Slack communities"
+    - "Meetup"

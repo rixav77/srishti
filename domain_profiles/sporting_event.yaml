@@ -1,0 +1,77 @@
+domain: sporting_event
+display_name: "Sporting Event"
+
+entity_mappings:
+  talent: "Athlete/Commentator"
+  funder: "Sponsor"
+  exhibitor: "Exhibitor"
+  location: "Stadium/Arena"
+  attendee: "Spectator"
+
+sponsor_tiers:
+  - name: "Title Sponsor"
+    min_budget: 500000
+  - name: "Jersey/Kit"
+    min_budget: 200000
+  - name: "Associate"
+    min_budget: 50000
+  - name: "Media Partner"
+    min_budget: 20000
+
+pricing_model: "seat_category"
+ticket_types:
+  - "General Stand"
+  - "Premium Stand"
+  - "VIP Box"
+  - "Hospitality Suite"
+
+scoring_weights:
+  sponsor:
+    industry_relevance: 0.20
+    historical_sponsorship: 0.30
+    budget_relevance: 0.25
+    sponsoring_frequency: 0.15
+    track_record: 0.10
+  speaker:
+    topic_relevance: 0.25
+    speaking_history: 0.20
+    influence: 0.40
+    past_participation: 0.15
+  exhibitor:
+    industry_fit: 0.25
+    exhibition_history: 0.20
+    company_stage: 0.15
+    marketing_activity: 0.25
+    geographic_presence: 0.15
+  venue:
+    capacity_fit: 0.30
+    budget_fit: 0.15
+    location_quality: 0.20
+    past_event_track_record: 0.20
+    amenities: 0.10
+    availability: 0.05
+
+scraping_sources:
+  events:
+    - "espn.com"
+    - "google.com/sports"
+    - "transfermarkt.com"
+  sponsors:
+    - "crunchbase.com"
+    - "sponsorship.com"
+  speakers:
+    - "espn.com/athletes"
+    - "instagram.com"
+  venues:
+    - "google.com/maps"
+    - "stadiumdb.com"
+
+community_channels:
+  primary:
+    - "Twitter/X"
+    - "Reddit"
+    - "Instagram"
+  secondary:
+    - "Fan club forums"
+    - "Fantasy sports platforms"
+    - "YouTube"
