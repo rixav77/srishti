@@ -1,89 +1,73 @@
-"""Scraper for conf.tech — tech conference aggregator."""
-import json
+"""Scraper for confs.tech — fetches open-source GitHub JSON data directly (no scraping needed)."""
 import logging
-
-from crawl4ai import CrawlerRunConfig, CacheMode
-from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
+import httpx
 
 from ..base import BaseScraper
 from ..normalize import make_event
 
 logger = logging.getLogger(__name__)
 
-# CSS schema for conf.tech event cards
-SCHEMA = {
-    "name": "conferences",
-    "baseSelector": "li.conference",
-    "fields": [
-        {"name": "title", "selector": "a", "type": "text"},
-        {"name": "url", "selector": "a", "type": "attribute", "attribute": "href"},
-        {"name": "date", "selector": ".conference-date", "type": "text"},
-        {"name": "location", "selector": ".conference-location", "type": "text"},
-        {"name": "tags", "selector": ".conference-tag", "type": "text"},
-    ],
-}
+BASE = "https://raw.githubusercontent.com/tech-conferences/conference-data/main/conferences"
 
-YEARS = [2025, 2026]
-BASE_URL = "https://confs.tech"
+TOPICS_2025 = [
+    "accessibility", "android", "api", "cfml", "cpp", "css", "data", "devops",
+    "dotnet", "general", "identity", "ios", "iot", "java", "javascript", "kotlin",
+    "leadership", "networking", "opensource", "performance", "php", "product",
+    "python", "ruby", "rust", "scala", "security", "sre", "testing", "typescript", "ux",
+]
 
-
-def _parse_location(raw: str | None) -> tuple[str | None, str | None]:
-    if not raw:
-        return None, None
-    parts = [p.strip() for p in raw.split(",")]
-    if len(parts) >= 2:
-        return parts[-2], parts[-1]
-    return raw.strip(), None
+TOPICS_2026 = [
+    "accessibility", "android", "api", "css", "data", "devops", "dotnet", "general",
+    "graphql", "ios", "iot", "java", "javascript", "kotlin", "leadership", "networking",
+    "opensource", "performance", "php", "product", "python", "rust", "security", "sre",
+    "testing", "typescript", "ux",
+]
 
 
 class ConfTechScraper(BaseScraper):
     source_name = "conf.tech"
 
-    async def scrape(self, topics: list[str] | None = None) -> list[dict]:
-        topics = topics or ["javascript", "ux", "devops", "general", "security", "data", "ai-ml"]
-        raw_events: list[dict] = []
-
-        config = CrawlerRunConfig(
-            extraction_strategy=JsonCssExtractionStrategy(schema=SCHEMA),
-            cache_mode=CacheMode.ENABLED,
-            remove_overlay_elements=True,
-            page_timeout=30000,
+    async def scrape(self, **kwargs) -> list[dict]:
+        """Fetch all topic JSON files from the GitHub repo via httpx."""
+        raw_events = []
+        urls = (
+            [(f"{BASE}/2025/{t}.json", t, 2025) for t in TOPICS_2025]
+            + [(f"{BASE}/2026/{t}.json", t, 2026) for t in TOPICS_2026]
         )
 
-        for year in YEARS:
-            urls = [f"{BASE_URL}/?year={year}&topic={t}" for t in topics]
-            results = await self.crawl_many(urls, config)
-
-            for result in results:
-                if not result.success or not result.extracted_content:
-                    continue
+        async with httpx.AsyncClient(timeout=15) as client:
+            for url, topic, year in urls:
                 try:
-                    data = json.loads(result.extracted_content)
-                    raw_events.extend(data if isinstance(data, list) else [])
-                except (json.JSONDecodeError, TypeError):
-                    logger.warning(f"[{self.source_name}] Could not parse JSON from {result.url}")
+                    r = await client.get(url)
+                    if r.status_code == 200:
+                        events = r.json()
+                        for e in events:
+                            e["_topic"] = topic
+                            e["_year"] = year
+                        raw_events.extend(events)
+                    else:
+                        logger.warning(f"[{self.source_name}] {url} → HTTP {r.status_code}")
+                except Exception as exc:
+                    logger.warning(f"[{self.source_name}] Failed {url}: {exc}")
 
+        logger.info(f"[{self.source_name}] Fetched {len(raw_events)} raw records from GitHub")
         return raw_events
 
     def normalize(self, raw: dict) -> dict | None:
-        name = raw.get("title", "").strip()
+        name = (raw.get("name") or "").strip()
         if not name:
             return None
-
-        city, country = _parse_location(raw.get("location"))
-        url = raw.get("url", "")
-        if url and not url.startswith("http"):
-            url = f"https://confs.tech{url}"
 
         return make_event(
             name=name,
             domain="conference",
-            category=raw.get("tags", "Technology"),
-            start_date=raw.get("date"),
-            city=city,
-            country=country,
-            website_url=url,
-            data_source="confs.tech",
-            extraction_method="crawl4ai_css",
-            raw_data=raw,
+            category=raw.get("_topic", "Technology").replace("-", "/").title(),
+            start_date=raw.get("startDate"),
+            end_date=raw.get("endDate"),
+            city=raw.get("city"),
+            country=raw.get("country"),
+            website_url=raw.get("url"),
+            data_source="confs.tech (github)",
+            extraction_method="github_json",
+            raw_data={k: v for k, v in raw.items() if not k.startswith("_")},
         )

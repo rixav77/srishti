@@ -1,4 +1,4 @@
-"""ETL pipeline — runs all scrapers, deduplicates, validates, exports CSV + JSON."""
+"""ETL pipeline — runs District, Mepass, and Skillboxes scrapers, deduplicates, validates, exports CSV + JSON."""
 import asyncio
 import json
 import logging
@@ -9,17 +9,14 @@ from pathlib import Path
 import pandas as pd
 
 from .normalize import dedup, is_valid
-from .conferences.conf_tech import ConfTechScraper
-from .conferences.ten_times import TenTimesScraper
-from .conferences.luma import LumaScraper
-from .conferences.dev_events import DevEventsScraper
-from .music.songkick import SongkickScraper
-from .music.jambase import JamBaseScraper
-from .sports.espn import ESPNScraper
+from .india.devfolio import DevfolioScraper
+from .india.district import DistrictScraper
+from .india.mepass import MepassScraper
+from .india.skillboxes import SkillboxesScraper
 
 logger = logging.getLogger(__name__)
 
-DATA_DIR = Path(__file__).resolve().parents[4] / "data"
+DATA_DIR = Path(__file__).resolve().parents[4] / "srishti" / "data"
 
 EXPORT_COLUMNS = [
     "name", "domain", "category", "subcategory", "description",
@@ -46,13 +43,11 @@ async def run_scrapers(scrapers: list) -> list[dict]:
 def export(events: list[dict], domain: str, data_dir: Path = DATA_DIR) -> tuple[Path, Path]:
     """Export events to CSV + JSON. Returns (csv_path, json_path)."""
     data_dir.mkdir(parents=True, exist_ok=True)
-    slug = domain.replace("_", "_")  # music_festival, conference, sporting_event
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d")
+    slug = domain
 
-    csv_path = data_dir / f"{slug}s_2025_2026.csv"
+    csv_path  = data_dir / f"{slug}s_2025_2026.csv"
     json_path = data_dir / f"{slug}s_2025_2026.json"
 
-    # Flatten list fields for CSV
     flat = []
     for e in events:
         row = {k: e.get(k) for k in EXPORT_COLUMNS}
@@ -71,58 +66,39 @@ def export(events: list[dict], domain: str, data_dir: Path = DATA_DIR) -> tuple[
     return csv_path, json_path
 
 
-async def collect_conferences() -> list[dict]:
-    scrapers = [
-        ConfTechScraper(),
-        TenTimesScraper(),
-        LumaScraper(),
-        DevEventsScraper(),
-    ]
-    events = await run_scrapers(scrapers)
-    events = [e for e in events if is_valid(e)]
-    events = dedup(events)
-    logger.info(f"Conferences total after dedup: {len(events)}")
-    return events
-
-
-async def collect_music_festivals() -> list[dict]:
-    scrapers = [SongkickScraper(), JamBaseScraper()]
-    events = await run_scrapers(scrapers)
-    events = [e for e in events if is_valid(e)]
-    events = dedup(events)
-    logger.info(f"Music festivals total after dedup: {len(events)}")
-    return events
-
-
-async def collect_sporting_events() -> list[dict]:
-    scrapers = [ESPNScraper()]
-    events = await run_scrapers(scrapers)
-    events = [e for e in events if is_valid(e)]
-    events = dedup(events)
-    logger.info(f"Sporting events total after dedup: {len(events)}")
-    return events
-
+# ── full pipeline ─────────────────────────────────────────────────────────────
 
 async def run_full_pipeline() -> dict:
-    """Run all scrapers and export all datasets. Returns summary."""
-    logger.info("=== Starting full scraping pipeline ===")
+    """Run all scrapers and export datasets. Returns summary."""
+    logger.info("=== Starting scraping pipeline (Devfolio + District + Mepass + Skillboxes) ===")
 
-    conferences, festivals, sports = await asyncio.gather(
-        collect_conferences(),
-        collect_music_festivals(),
-        collect_sporting_events(),
-    )
+    scrapers = [
+        DevfolioScraper(),
+        DistrictScraper(),
+        MepassScraper(),
+        SkillboxesScraper(),
+    ]
+
+    all_events = await run_scrapers(scrapers)
+    all_events = [e for e in all_events if is_valid(e)]
+    all_events = dedup(all_events)
+    logger.info(f"Total events after dedup: {len(all_events)}")
+
+    # Split by domain for export
+    conferences   = [e for e in all_events if e.get("domain") == "conference"]
+    music         = [e for e in all_events if e.get("domain") == "music_festival"]
+    sports        = [e for e in all_events if e.get("domain") == "sporting_event"]
 
     export(conferences, "conference")
-    export(festivals, "music_festival")
-    export(sports, "sporting_event")
+    export(music,       "music_festival")
+    export(sports,      "sporting_event")
 
     summary = {
-        "conferences": len(conferences),
-        "music_festivals": len(festivals),
+        "conferences":    len(conferences),
+        "music_festivals": len(music),
         "sporting_events": len(sports),
-        "total": len(conferences) + len(festivals) + len(sports),
-        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "total":          len(all_events),
+        "exported_at":    datetime.now(timezone.utc).isoformat(),
     }
     logger.info(f"Pipeline complete: {summary}")
     return summary

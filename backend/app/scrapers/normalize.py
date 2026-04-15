@@ -23,11 +23,27 @@ def parse_date(raw: str | None) -> str | None:
 
 
 def normalize_location(city: str | None, country: str | None) -> tuple[str | None, str | None]:
-    """Basic cleanup for city/country strings."""
+    """Clean city/country strings; discard obviously-garbage values."""
     def clean(s: str | None) -> str | None:
         if not s:
             return None
-        return s.strip().title()
+        s = s.strip()
+        # Discard year-range patterns like "2001–2019" or "2022–present"
+        if re.search(r"\d{4}[–\-]", s):
+            return None
+        # Discard if longer than 40 chars (venue text bleed-through)
+        if len(s) > 40:
+            return None
+        # Discard if contains colon (e.g. "Flagship:Las Vegas")
+        if ":" in s:
+            return None
+        # Discard if contains parenthesis (venue(city) leftovers)
+        if "(" in s or ")" in s:
+            return None
+        # Discard postcode/zip-like suffix (e.g. "Church Roadsw19", "NY 10001")
+        if re.search(r"[a-z]{2}\d{1,2}$|[A-Z]{1,2}\d{1,2}$|\d{5}$", s):
+            return None
+        return s.title()
     return clean(city), clean(country)
 
 
@@ -110,3 +126,80 @@ def dedup(events: list[dict]) -> list[dict]:
 def is_valid(event: dict) -> bool:
     """Reject records missing mandatory fields (name + date)."""
     return bool(event.get("name")) and bool(event.get("start_date"))
+
+
+def classify_event(
+    name: str = "",
+    description: str = "",
+    category: str = "",
+    source_url: str = "",
+) -> tuple[str, str, str | None]:
+    """
+    Return (domain, category_label, subcategory) based on text signals.
+
+    Domains: conference | music_festival | sporting_event | comedy | workshop | entertainment
+    """
+    text = " ".join([name, description, category, source_url]).lower()
+
+    # ── Sports ────────────────────────────────────────────────────────────────
+    if any(w in text for w in (
+        "cricket", "ipl", "football", "kabaddi", "badminton", "tennis",
+        "hockey", "basketball", "marathon", "run ", "running", "cycling",
+        "swimming", "sports", "match ", " vs ", "tournament", "league",
+    )):
+        return "sporting_event", "Sports", None
+
+    # ── Music ─────────────────────────────────────────────────────────────────
+    if any(w in text for w in (
+        "concert", "music festival", "music in ", "gig", "edm", "dj ",
+        "live music", "band ", "electronic", "techno", "hip hop", "jazz",
+        "classical music", "sufi", "folk music", "band", "singer",
+        "bollywood night", "disco", "rave", "afterparty",
+    )):
+        return "music_festival", "Concert", None
+
+    # ── Comedy ────────────────────────────────────────────────────────────────
+    if any(w in text for w in (
+        "comedy", "standup", "stand-up", "stand up", "comic", "open mic",
+        "openmic", "open-mic", "roast", "improv", "jokes",
+    )):
+        return "comedy", "Comedy Show", None
+
+    # ── Workshop / Class ──────────────────────────────────────────────────────
+    if any(w in text for w in (
+        "workshop", "masterclass", "master class", "bootcamp", "boot camp",
+        "training", "certification", "course ", "class ", "learn ", "skill",
+        "hackathon", "webinar",
+    )):
+        return "workshop", "Workshop", None
+
+    # ── Theater / Performing Arts ─────────────────────────────────────────────
+    if any(w in text for w in (
+        "theatre", "theater", " play ", "drama", "musical ", "dance show",
+        "ballet", "opera", "circus", "magic show", "puppet",
+    )):
+        return "entertainment", "Theater & Performing Arts", None
+
+    # ── Exhibition / Expo ─────────────────────────────────────────────────────
+    if any(w in text for w in (
+        "exhibition", "expo ", "fair ", "art show", "gallery", "showcase",
+        "trade show", "craft fair",
+    )):
+        return "entertainment", "Exhibition", None
+
+    # ── Food & Drink ──────────────────────────────────────────────────────────
+    if any(w in text for w in (
+        "food festival", "food fest", "culinary", "wine tasting", "beer fest",
+        "beer festival", "dining experience", "food walk",
+    )):
+        return "entertainment", "Food & Drink", None
+
+    # ── Conference / Summit ───────────────────────────────────────────────────
+    if any(w in text for w in (
+        "conference", "summit", "meetup", "networking", "startup", "tech talk",
+        "conclave", "symposium", "forum ", "seminar",
+    )):
+        return "conference", "Conference", None
+
+    # Default
+    return "conference", "Events", None
