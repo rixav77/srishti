@@ -19,31 +19,33 @@
 
 ---
 
-## Phase 1: Data Foundation [CURRENT]
+## Phase 1: Data Foundation
 
-### Phase 1A: Mandatory Dataset Collection
-> **Can work independently. No backend needed.**
+### Phase 1A: Mandatory Dataset Collection [COMPLETED 2026-04-16]
+> Scraping + Exa-based custom search tools. See `data/DATA_SOURCES.md`.
 
-| Task | Owner | Status |
-|------|-------|--------|
-| Scrape 100+ tech conferences (2025-2026) from conf.tech, Eventbrite, 10times | | Pending |
-| Scrape 60+ music festivals (2025-2026) from Songkick, JamBase, Wikipedia | | Pending |
-| Scrape 60+ sporting events (2025-2026) from ESPN, Wikipedia | | Pending |
-| Normalize + deduplicate all data | | Pending |
-| Export `data/conferences_2025_2026.csv` + `.json` | | Pending |
-| Export `data/music_festivals_2025_2026.csv` + `.json` | | Pending |
-| Export `data/sporting_events_2025_2026.csv` + `.json` | | Pending |
-| Write `data/DATA_SOURCES.md` | | Pending |
+| Task | Status |
+|------|--------|
+| Scrape conferences/hackathons (Devfolio, District, Mepass) | Done |
+| Scrape music festivals (District, Skillboxes, Mepass) | Done |
+| Scrape sporting events (District, Mepass, Skillboxes) | Done |
+| Custom Exa-based search tools for famous events | Done |
+| Enrich events (attendance, end dates, speakers/artists) | Done |
+| Add curated famous events (NeurIPS, Coachella, FIFA WC, IPL, etc.) | Done |
+| Export `data/conferences_2025_2026.csv` + `.json` (88 events) | Done |
+| Export `data/music_festivals_2025_2026.csv` + `.json` (130 events) | Done |
+| Export `data/sporting_events_2025_2026.csv` + `.json` (23 events) | Done |
+| Write `data/DATA_SOURCES.md` | Done |
 
-**Required fields per event:**
-- event_name, dates (start/end), location (city/country), category/theme
-- sponsors (if known), speakers (if applicable), estimated_attendance
-- ticket_price (min/max/currency), website_url
-- data_source, extraction_method
+**Final counts:**
+- **Total: 241 events** (target 220+)
+- **Geographic spread: 11 countries** (up from India-only)
+- **Year distribution:** 13 × 2025, 228 × 2026
+- **Attendance + end_dates: 100% coverage**
+- **Sponsors: 19% populated** (famous events + IPL matches)
+- **Speakers/artists: 61% populated** (parsed + curated)
 
-**Minimum:** 50 events per domain, 220+ total
-
-### Phase 1B: Database + Vector DB Setup
+### Phase 1B: Database + Vector DB Setup [CURRENT]
 > **Can work independently. Needs env vars.**
 
 | Task | Owner | Status |
@@ -51,7 +53,7 @@
 | Create Supabase tables (events, sponsors, talents, venues, communities) | | Pending |
 | Build `backend/app/data/database.py` connection module | | Pending |
 | Build `backend/app/services/embedding.py` (HuggingFace API) | | Pending |
-| Seed database with mandatory dataset | | Pending |
+| Seed database with mandatory dataset (241 events) | | Pending |
 | Generate embeddings and load into Pinecone | | Pending |
 | Add `/api/datasets/stats` endpoint | | Pending |
 | Add `/api/search` endpoint (vector search test) | | Pending |
@@ -65,14 +67,14 @@
 
 ---
 
-## Phase 1.5: Live Tools Layer [NEW]
+## Phase 1.5: Live Tools Layer [IN PROGRESS]
 
 > Addresses the "static RAG" gap: agents can now fetch current info on demand.
 > Without this, agents only know what was scraped — no freshness.
 
 | Task | Owner | Status |
 |------|-------|--------|
-| Sign up for Exa API + add `EXA_API_KEY` to env | | Pending |
+| Sign up for Exa API + add `EXA_API_KEY` to env (local + Railway) | | **Done** |
 | Build `backend/app/services/tools.py` with `search_web(query)` via Exa | | Pending |
 | Add Redis caching wrapper (`cached_web_search` with 1h TTL) | | Pending |
 | Add `scrape_page(url)` tool using Playwright for on-demand scraping | | Pending |
