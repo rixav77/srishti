@@ -65,17 +65,47 @@
 
 ---
 
+## Phase 1.5: Live Tools Layer [NEW]
+
+> Addresses the "static RAG" gap: agents can now fetch current info on demand.
+> Without this, agents only know what was scraped — no freshness.
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Sign up for Exa API + add `EXA_API_KEY` to env | | Pending |
+| Build `backend/app/services/tools.py` with `search_web(query)` via Exa | | Pending |
+| Add Redis caching wrapper (`cached_web_search` with 1h TTL) | | Pending |
+| Add `scrape_page(url)` tool using Playwright for on-demand scraping | | Pending |
+| Define tool schemas in Groq function-calling format | | Pending |
+| Test tool-calling loop: LLM → tool → result → LLM (ReAct pattern) | | Pending |
+| Document tool list + when each agent should call them | | Pending |
+
+**Tool inventory (target):**
+
+| Tool | Purpose | Used by |
+|------|---------|---------|
+| `search_web(query)` | General web search (Exa/Tavily) | Any agent |
+| `scrape_page(url)` | Fetch + parse arbitrary page (Playwright) | Any agent |
+| `get_company_info(name)` | Crunchbase/LinkedIn lookup | Sponsor, Exhibitor |
+| `get_artist_stats(name)` | Spotify monthly listeners (music domain) | Speaker/Artist |
+| `check_venue_availability(venue, date)` | Live venue API | Venue |
+
+---
+
 ## Phase 2: AI Agents [NEXT]
+
+> Every agent now uses BOTH Tier 1 RAG (Pinecone + Supabase) AND Tier 2 live tools (Exa/Playwright).
+> Pattern: RAG first for historical grounding, then call tools for current verification.
 
 ### Phase 2A: Core Agents (Wave 1 - Independent)
 > **Can work in parallel. Each agent is a separate file.**
 
 | Task | Owner | Status |
 |------|-------|--------|
-| Sponsor Agent (`backend/app/agents/sponsor_agent.py`) | | Pending |
-| Speaker/Artist Agent (`backend/app/agents/speaker_agent.py`) | | Pending |
-| Exhibitor Agent (`backend/app/agents/exhibitor_agent.py`) | | Pending |
-| Venue Agent (`backend/app/agents/venue_agent.py`) | | Pending |
+| Sponsor Agent (`backend/app/agents/sponsor_agent.py`) — RAG + `search_web` tool | | Pending |
+| Speaker/Artist Agent (`backend/app/agents/speaker_agent.py`) — RAG + `get_artist_stats` | | Pending |
+| Exhibitor Agent (`backend/app/agents/exhibitor_agent.py`) — RAG + `get_company_info` | | Pending |
+| Venue Agent (`backend/app/agents/venue_agent.py`) — RAG + `check_venue_availability` | | Pending |
 
 ### Phase 2B: Dependent Agents (Wave 2-3)
 > **Depends on Phase 2A outputs.**
@@ -134,14 +164,24 @@
 
 | Component | Technology | Cost |
 |-----------|-----------|------|
-| LLM | Groq (Llama 3.3 70B) | Free |
+| LLM | Groq (Llama 3.3 70B + Llama 3.1 8B) | Free |
 | Embeddings | HuggingFace Inference API (BGE-M3) | Free |
+| **Live web search (tools)** | **Exa API + Tavily** | **Free tier** |
+| **On-demand scraping (tools)** | **Playwright / crawl4ai** | **Free** |
 | Backend | FastAPI (Python) | Free (Railway) |
-| Frontend | Next.js 14 + Tailwind + shadcn/ui | Free (Vercel) |
+| Frontend | Vite + React + shadcn/ui | Free (Vercel) |
 | Database | Supabase (PostgreSQL) | Free |
 | Vector DB | Pinecone (Starter) | Free |
 | Cache | Upstash Redis | Free |
 | Orchestration | LangGraph | - |
+
+## Knowledge Architecture (3 Tiers)
+
+| Tier | Layer | Tech | When |
+|------|-------|------|------|
+| 1 | Static RAG | Pinecone (semantic) + Supabase (SQL) | Historical grounding, every agent starts here |
+| 2 | Live tools | Exa / Tavily / Playwright | Current verification, called by LLM when needed |
+| 3 | Memory | LangGraph checkpoints | Session state, user prefs |
 
 ---
 

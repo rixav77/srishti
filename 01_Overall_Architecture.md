@@ -75,19 +75,30 @@ Each agent reads from this config. When a user selects "Music Festival," the Spe
 └───────────────────────────┼──────────────────────────────────────┘
                             │
 ┌───────────────────────────┼──────────────────────────────────────┐
-│                    DATA LAYER                                    │
+│                    KNOWLEDGE LAYER (3 Tiers)                      │
 │                                                                  │
+│  Tier 1: STATIC (scraped + curated, fast + frozen)               │
 │  ┌────────────┐  ┌────────────┐  ┌────────────┐                 │
-│  │ PostgreSQL  │  │ Pinecone   │  │ Redis      │                 │
-│  │ (structured │  │ (vector    │  │ (cache,    │                 │
-│  │  events,    │  │  embeddings│  │  queues,   │                 │
-│  │  sponsors,  │  │  for RAG   │  │  sessions) │                 │
-│  │  results)   │  │  memory)   │  │            │                 │
+│  │ Supabase    │  │ Pinecone   │  │ Redis      │                 │
+│  │ (Postgres)  │  │ (vector    │  │ (cache +   │                 │
+│  │ structured  │  │ embeddings │  │ sessions)  │                 │
+│  │ events,     │  │ for RAG    │  │            │                 │
+│  │ sponsors    │  │ memory)    │  │            │                 │
 │  └────────────┘  └────────────┘  └────────────┘                 │
 │                                                                  │
+│  Tier 2: LIVE TOOLS (agent-callable, fresh)                      │
 │  ┌────────────────────────────────────────────┐                  │
-│  │         Data Aggregation Pipelines          │                  │
+│  │  Exa / Tavily  │ Playwright │ Live APIs    │                  │
+│  │  (web search)  │ (on-demand │ (Crunchbase, │                  │
+│  │                │  scraping) │  LinkedIn)   │                  │
+│  └────────────────────────────────────────────┘                  │
+│  LLMs invoke these via function-calling when they need           │
+│  current info not present in Tier 1.                             │
+│                                                                  │
+│  Tier 3: DATA AGGREGATION (batch/offline)                        │
+│  ┌────────────────────────────────────────────┐                  │
 │  │  Scrapers │ APIs │ CSV/JSON Ingest │ ETL    │                  │
+│  │  Runs nightly/weekly to refresh Tier 1     │                  │
 │  └────────────────────────────────────────────┘                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -101,7 +112,8 @@ Each agent reads from this config. When a user selects "Music Festival," the Spe
 | **Domain-agnostic** | `DomainConfig` abstraction; every agent parameterized by domain |
 | **Agent autonomy** | Each agent is a self-contained LangGraph node with own tools and memory |
 | **Shared context** | LangGraph shared state + Pinecone vector store for cross-agent memory |
-| **Data-first** | All recommendations backed by real scraped/aggregated data |
+| **Hybrid knowledge** | Static RAG (historical) + Live tools (current) — agents pick the right layer per query |
+| **Data-first** | All recommendations backed by real scraped/aggregated data + live verification |
 | **Simulation-ready** | Every numerical output feeds into what-if scenario engine |
 | **Extensible** | New agents plug in via standard interface; new domains via config |
 
@@ -142,13 +154,15 @@ Export: PDF report, outreach emails, CSV data, shareable dashboard
 
 | Component | Service | Hosting |
 |-----------|---------|---------|
-| Frontend | Next.js 14 | Vercel |
-| API | FastAPI | Railway / Render |
+| Frontend | Vite + React + shadcn/ui | Vercel |
+| API | FastAPI | Railway |
 | Orchestration | LangGraph (Python) | Same as API |
-| Database | PostgreSQL | Supabase or Neon |
+| Database | Supabase (PostgreSQL) | Supabase Cloud (free) |
 | Vector DB | Pinecone | Pinecone Cloud (free tier) |
-| Cache | Redis | Upstash |
-| Scraping workers | Celery + Playwright | Railway background workers |
-| LLM | Claude API (via Anthropic SDK) | API calls |
+| Cache | Upstash Redis | Upstash (free) |
+| Scrapers | Playwright / crawl4ai | Run offline to seed Tier 1 |
+| **LLM** | **Groq — Llama 3.3 70B** | Free, ultra-fast inference |
+| **Embeddings** | **BGE-M3 via HuggingFace API** | Free, 1024 dims |
+| **Live search tools** | **Exa API / Tavily** | Free tier |
 
 All services have free tiers sufficient for a hackathon prototype.

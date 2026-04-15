@@ -8,14 +8,16 @@
 
 | Layer | Technology | Justification |
 |-------|-----------|---------------|
-| **LLM** | Claude API (Anthropic) | Best reasoning, tool use, long context. Sonnet 4.6 for agents, Haiku 4.5 for lightweight tasks |
-| **Agent Framework** | LangGraph + LangChain | Stateful multi-agent orchestration, native checkpointing, human-in-the-loop |
-| **Backend API** | FastAPI (Python) | Async, fast, auto-docs, perfect for LangChain ecosystem |
-| **Frontend** | Next.js 14 (React) | SSR, API routes, fast prototyping, excellent ecosystem |
-| **Database** | Supabase (PostgreSQL) | Free tier, real-time subscriptions, auth, hosted |
-| **Vector DB** | Pinecone | Managed, free tier (100K vectors), metadata filtering, fast |
-| **Cache/Queue** | Upstash Redis | Serverless Redis, free tier, Celery-compatible |
-| **Embeddings** | text-embedding-3-small (OpenAI) | Cost-effective, 1536 dims, well-supported |
+| **LLM (primary)** | Groq — `llama-3.3-70b-versatile` | Free, ultra-fast inference (~2s), native tool/function calling |
+| **LLM (fast)** | Groq — `llama-3.1-8b-instant` | For lightweight classification, normalization, cheap fallbacks |
+| **Embeddings** | BGE-M3 via HuggingFace Inference API | Free, 1024 dims, strong semantic quality |
+| **Live Tools** | Exa API (primary) + Tavily (fallback) | Agent-callable web search for freshness |
+| **Agent Framework** | LangGraph + LangChain | Stateful multi-agent orchestration, checkpointing, HITL |
+| **Backend API** | FastAPI (Python) | Async, auto-docs, perfect for LangChain ecosystem |
+| **Frontend** | Vite + React 18 + shadcn/ui | Already scaffolded, fast dev loop |
+| **Database** | Supabase (PostgreSQL) | Free tier, real-time subscriptions, hosted |
+| **Vector DB** | Pinecone | Managed, free (100K vectors), metadata filtering |
+| **Cache/Queue** | Upstash Redis | Serverless Redis, free tier, live-data caching |
 
 ### Data & Scraping
 
@@ -32,11 +34,22 @@
 
 | Component | Technology | Justification |
 |-----------|-----------|---------------|
-| **RAG Pipeline** | LangChain + Pinecone | Native integration, battle-tested retrieval |
+| **RAG Pipeline (Tier 1)** | LangChain + Pinecone + Supabase | Hybrid retrieval: semantic vectors + SQL joins |
+| **Tools Layer (Tier 2)** | Exa API + Tavily + custom tool functions | Live web search & scraping, invoked via Groq function-calling |
 | **Agent Memory** | LangGraph Checkpoints + Pinecone | Session memory + long-term episodic memory |
 | **Predictive Models** | scikit-learn or rule-based | Sufficient for hackathon, no training data issues |
-| **Outreach Generation** | Claude (LLM prompting) | High-quality personalized text generation |
+| **Outreach Generation** | Groq LLM prompting | High-quality personalized text generation |
 | **Scoring/Ranking** | Custom Python (NumPy) | Lightweight multi-dimensional scoring |
+
+### Knowledge Tiers (how agents fetch info)
+
+| Tier | When to use | Tech | Speed | Freshness |
+|------|------------|------|-------|-----------|
+| **1. Static RAG** | Historical grounding ("who sponsored similar events?") | Pinecone + Supabase | Fast | Frozen at scrape time |
+| **2. Live tools** | Current facts ("is Google Cloud's AI event budget growing in 2026?") | Exa / Tavily / Playwright | Slow | Real-time |
+| **3. Agent memory** | Past sessions, user preferences | LangGraph checkpoints | Fast | Per-session |
+
+Agents default to Tier 1 for speed, then call Tier 2 tools via function-calling when they detect missing or stale info.
 
 ### Frontend
 
@@ -81,15 +94,15 @@ The user has these relevant skills available:
 
 ## API Key Requirements
 
-| Service | Key Needed | Free Tier |
-|---------|-----------|-----------|
-| Anthropic (Claude) | `ANTHROPIC_API_KEY` | Credits or pay-as-go |
-| OpenAI (embeddings) | `OPENAI_API_KEY` | $5 free credits |
-| Pinecone | `PINECONE_API_KEY` | 100K vectors free |
-| Supabase | `SUPABASE_URL` + `SUPABASE_KEY` | 500MB free |
-| Upstash Redis | `REDIS_URL` | 10K commands/day free |
-| Eventbrite | `EVENTBRITE_API_KEY` | Free API access |
-| Spotify | `SPOTIFY_CLIENT_ID` + `SECRET` | Free API |
+| Service | Key Needed | Free Tier | Status |
+|---------|-----------|-----------|--------|
+| **Groq (LLM)** | `GROQ_API_KEY` | Free, high rate limits | Configured |
+| **HuggingFace (embeddings)** | `HUGGINGFACEHUB_API_TOKEN` | Free | Configured |
+| **Pinecone** | `PINECONE_API_KEY` | 100K vectors free | Configured |
+| **Supabase** | `SUPABASE_URL` + `SUPABASE_KEY` | 500MB free | Configured |
+| **Upstash Redis** | `REDIS_URL` | 10K commands/day free | Configured |
+| **Exa (live web search)** | `EXA_API_KEY` | 1,000 searches free/month | To add |
+| **Tavily (fallback search)** | `TAVILY_API_KEY` | 1,000 calls free/month | Optional |
 
 ---
 

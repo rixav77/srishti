@@ -395,6 +395,127 @@ Do NOT be generic. Do NOT use cliches like "exciting opportunity."
 
 ---
 
+## 5.5 Live Tools Layer (Freshness Beyond RAG)
+
+### Why Pure RAG Isn't Enough
+
+Static RAG gives agents **depth** (rich historical context) but not **freshness** (what's true right now). Event planning needs both:
+- Historical grounding: "Which sponsors backed similar AI conferences in India?"
+- Live verification: "Is Google Cloud's 2026 event budget actually growing?"
+
+Without live tools, agents are smart but stale. With tools, they reason over history AND verify against the real world.
+
+### Tool-Augmented Agents (ReAct Pattern)
+
+Every Srishti agent follows this pattern:
+
+```
+1. RAG layer (Tier 1):  Pull historical context from Pinecone + Supabase
+2. LLM reasoning:       Build initial recommendations from history
+3. Tool calls (Tier 2): Verify/enrich via Exa, Tavily, Playwright
+4. Final synthesis:     Combine historical + live evidence
+```
+
+The LLM decides WHEN to call a tool via Groq's function-calling API. Example:
+
+```python
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_web",
+            "description": "Search the web for recent news or facts",
+            "parameters": {"query": "string"}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_company_info",
+            "description": "Fetch current company data (funding, size, recent moves)",
+            "parameters": {"company_name": "string"}
+        }
+    }
+]
+
+response = await groq.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=messages,
+    tools=tools,
+    tool_choice="auto"   # LLM decides when to call
+)
+
+# Tool call loop (ReAct)
+while response.choices[0].message.tool_calls:
+    for call in response.choices[0].message.tool_calls:
+        result = await execute_tool(call.function.name, call.function.arguments)
+        messages.append({"role": "tool", "content": result, "tool_call_id": call.id})
+    response = await groq.chat.completions.create(model=..., messages=messages, tools=tools)
+
+final_answer = response.choices[0].message.content
+```
+
+### Tool Inventory
+
+| Tool | Implementation | Used by |
+|------|---------------|---------|
+| `search_web(query)` | Exa API (primary) + Tavily (fallback) | Any agent — general freshness |
+| `scrape_page(url)` | Playwright | Any agent — specific URL fetch |
+| `get_company_info(name)` | Web search + result parsing | Sponsor, Exhibitor |
+| `get_artist_stats(name)` | Spotify API (music domain) | Speaker/Artist (music) |
+| `check_venue_availability(venue, date)` | Venue site scraper | Venue |
+| `get_twitter_signals(keyword)` | Public Twitter search | GTM |
+
+### Caching Strategy (Upstash Redis)
+
+Live tools are slow and rate-limited. We cache results:
+
+```python
+async def cached_tool(tool_name: str, args: dict, ttl: int = 3600):
+    key = f"tool:{tool_name}:{hash(json.dumps(args, sort_keys=True))}"
+    cached = await redis.get(key)
+    if cached:
+        return json.loads(cached)
+    
+    result = await TOOL_REGISTRY[tool_name](**args)
+    await redis.setex(key, ttl, json.dumps(result))
+    return result
+```
+
+| Tool type | Cache TTL | Why |
+|-----------|-----------|-----|
+| Web search | 1 hour | News changes slowly |
+| Company info | 24 hours | Funding/size stable |
+| Venue availability | 10 minutes | Books fast |
+| Social signals | 15 minutes | Trends shift fast |
+
+### The Two-Pass Agent Pattern
+
+```python
+async def sponsor_agent(state):
+    # PASS 1: RAG retrieval (Tier 1)
+    event = state["event_config"]
+    similar_events = await pinecone.query(embed(event))
+    historical_sponsors = await supabase.query(
+        "SELECT ... WHERE event_id IN (...)",
+        [e.id for e in similar_events]
+    )
+    
+    # PASS 2: LLM reasoning with tools (Tier 2 on-demand)
+    messages = [
+        {"role": "system", "content": SPONSOR_SYSTEM_PROMPT},
+        {"role": "user", "content": build_sponsor_prompt(event, historical_sponsors)}
+    ]
+    
+    response = await groq_with_tools(messages, tools=[search_web, get_company_info])
+    
+    return {"sponsor_results": parse(response)}
+```
+
+The beauty: **the LLM itself decides when fresh data is needed**. Hardcoded "always call web search" wastes tokens. "Never call it" loses freshness. Tool-calling lets the model pick.
+
+---
+
 ## 6. AI Agent Memory Architecture
 
 ### Three Memory Layers
