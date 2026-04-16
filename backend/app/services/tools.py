@@ -25,7 +25,6 @@ from functools import lru_cache
 from typing import Any
 
 import redis as redis_lib
-from exa_py import Exa
 
 from app.config import get_settings
 
@@ -34,9 +33,29 @@ logger = logging.getLogger(__name__)
 
 # ── clients ───────────────────────────────────────────────────────────────────
 
-@lru_cache(maxsize=1)
-def _exa() -> Exa:
-    return Exa(api_key=get_settings().exa_api_key)
+_exa_client = None
+
+
+def _exa():
+    """Create Exa client lazily so missing optional dependency doesn't crash runtime."""
+    global _exa_client
+
+    if _exa_client is not None:
+        return _exa_client
+
+    try:
+        from exa_py import Exa  # type: ignore
+    except Exception as exc:
+        logger.warning(f"Exa client unavailable: {exc}")
+        return None
+
+    api_key = get_settings().exa_api_key
+    if not api_key:
+        logger.warning("EXA_API_KEY is not configured — live web search disabled")
+        return None
+
+    _exa_client = Exa(api_key=api_key)
+    return _exa_client
 
 @lru_cache(maxsize=1)
 def _redis() -> redis_lib.Redis | None:
@@ -92,7 +111,11 @@ def search_web(query: str, num_results: int = 5) -> list[dict]:
         return cached
 
     try:
-        response = _exa().search_and_contents(
+        exa_client = _exa()
+        if exa_client is None:
+            return []
+
+        response = exa_client.search_and_contents(
             query,
             num_results=num_results,
             type="neural",
