@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useProjects } from "@/lib/ProjectContext";
 import { runAgentsStream, AgentPlan } from "@/lib/api";
+import AgentGraph from "@/components/AgentGraph";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Loader2, Circle, SkipForward, Sparkles, Play, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -217,6 +218,9 @@ export default function GeneratingPage() {
           </div>
           <Progress value={progressValue} className="h-1.5" />
         </div>
+
+        {/* Agent Collaboration Graph */}
+        <AgentGraph agents={agents} />
 
         <div className="space-y-1.5 flex-1">
           {agents.map((agent) => (
