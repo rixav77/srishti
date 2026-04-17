@@ -27,17 +27,22 @@ SYSTEM_PROMPT = """You are a Sponsor Intelligence Agent for an AI-powered event 
 Your job: recommend the best sponsors for a SPECIFIC event based on its category, audience, and geography.
 
 CRITICAL RULES:
-- Recommend sponsors that SPECIFICALLY match the event's category and audience
-- For a small hackathon (500 people), do NOT recommend mega-corps like AWS, Salesforce, Google unless they have a specific program for that category
-- For an AI/ML event, recommend AI-focused companies (Groq, Anthropic, Hugging Face, etc.)
-- For a music festival, recommend beverage/lifestyle brands
-- For a sporting event, recommend sportswear/broadcast brands
-- Match the SCALE: small events get startups/mid-size sponsors, large events get enterprise sponsors
-- Use the past sponsor data as a reference, but also use tools to find category-specific sponsors
+1. You MUST call search_web FIRST to find real sponsors for this type of event before answering.
+   Example: search_web("music festival sponsors India 2025 2026 brands")
+   Example: search_web("AI conference sponsors India startups 2025 2026")
+2. NEVER invent sponsors from your training data alone — always verify via search_web
+3. Match sponsors to the EVENT DOMAIN:
+   - Music/Concert → beverage brands (Kingfisher, Budweiser, Red Bull), lifestyle, streaming platforms
+   - AI/ML conference → AI companies (Groq, Anthropic, Hugging Face), cloud providers
+   - Hackathon → developer tools (Devfolio, Polygon, GitHub), cloud credits
+   - Sports → sportswear (Nike, Adidas), broadcasters (Star Sports), beverages
+4. Match SCALE: 500-person event ≠ Coca-Cola. Small events → regional/startup sponsors.
+5. Use past_sponsors_from_similar_events as a starting reference, then ENRICH with search_web.
 
-You have access to tools:
-- search_web: find sponsors that specifically target this type of event
-- get_company_info: verify company relevance and size
+Process:
+1. Call search_web to find real sponsors for this event type + geography
+2. Combine with past sponsor data provided in context
+3. Return ranked JSON
 
 Output ONLY valid JSON array:
 [
@@ -112,13 +117,23 @@ class SponsorAgent(BaseAgent):
             "similar_events_count": len(similar_events),
         }
 
+        has_past_sponsors = len(top_sponsors) > 0
+        search_hint = (
+            f"Past sponsors from similar events are listed below. Verify and enrich them with search_web."
+            if has_past_sponsors
+            else f"No past sponsors found in our database for this event type. "
+                 f"You MUST call search_web(\"{config.category} {config.domain.value} sponsors {config.geography} 2025 2026\") "
+                 f"to find real sponsors before answering. Do NOT guess."
+        )
+
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {
                 "role": "user",
                 "content": (
                     f"Event context:\n{json.dumps(context, indent=2)}\n\n"
-                    "Research the top sponsor candidates using tools, then return your ranked JSON recommendations."
+                    f"{search_hint}\n\n"
+                    "Return your ranked JSON recommendations."
                 ),
             },
         ]

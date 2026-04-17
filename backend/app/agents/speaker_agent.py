@@ -150,14 +150,23 @@ class SpeakerAgent(BaseAgent):
 
         system_prompt = SYSTEM_PROMPTS.get(domain, SYSTEM_PROMPTS["conference"])
 
+        has_past_talents = len(top_talents) > 0
+        search_hint = (
+            f"Past {talent_type} from similar events are listed below. Verify and enrich with search_web."
+            if has_past_talents
+            else f"No past {talent_type} found in our database. "
+                 f"You MUST call search_web(\"{config.category} {talent_type} {config.geography} 2025 2026\") "
+                 f"to find real {talent_type} before answering. Do NOT guess."
+        )
+
         messages = [
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
                 "content": (
                     f"Event context:\n{json.dumps(context, indent=2)}\n\n"
-                    f"Research the top {talent_type} candidates using tools, "
-                    "then return your ranked JSON recommendations."
+                    f"{search_hint}\n\n"
+                    f"Return your ranked JSON recommendations for {talent_type}."
                 ),
             },
         ]

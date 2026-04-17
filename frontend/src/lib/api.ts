@@ -23,7 +23,7 @@ const CATEGORY_MAP: Record<string, string> = {
   "HealthTech":  "HealthTech",
   "Gaming":      "Gaming",
   "Climate":     "Climate",
-  "Music & Arts":"Music",
+  "Music & Arts":"Concert",
 };
 
 const GEO_MAP: Record<string, string> = {
