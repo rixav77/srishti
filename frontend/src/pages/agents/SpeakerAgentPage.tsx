@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Project, Speaker, getSpeakersForProject } from "@/lib/data";
+import { useProjects } from "@/lib/ProjectContext";
+import { mapSpeakers } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import AgentPageControls, { ItemFormDialog, AddCustomItemButton } from "@/components/AgentPageControls";
@@ -16,7 +18,13 @@ const SPEAKER_FIELDS = [
 const emptyForm = (): Record<string, string> => ({ name: "", topic: "", influence: "High", pastTalks: "0", matchScore: "0" });
 
 export default function SpeakerAgentPage({ project }: { project: Project }) {
-  const [speakers, setSpeakers] = useState<Speaker[]>(getSpeakersForProject(project));
+  const { getAgentResults } = useProjects();
+  const initialSpeakers = useMemo(() => {
+    const results = getAgentResults(project.id);
+    const real = results?.speakers ? mapSpeakers(results.speakers) : [];
+    return real.length > 0 ? real : getSpeakersForProject(project);
+  }, [project, getAgentResults]);
+  const [speakers, setSpeakers] = useState<Speaker[]>(initialSpeakers);
   const [formOpen, setFormOpen] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>(emptyForm());
   const [editIndex, setEditIndex] = useState<number | null>(null);

@@ -3,6 +3,7 @@ export interface Project {
   name: string;
   category: string;
   geography: string[];
+  city?: string;
   audienceSize: number;
   customizationEnabled: boolean;
   agentInstructions: Record<string, string>;

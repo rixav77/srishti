@@ -94,7 +94,7 @@ class GTMAgent(BaseAgent):
         gtm = {}
         for _ in range(4):
             response = client.chat.completions.create(
-                model=settings.default_model,
+                model=settings.fast_model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
                 tool_choice="auto",

@@ -157,7 +157,7 @@ class SpeakerAgent(BaseAgent):
         talents = []
         for _ in range(5):
             response = client.chat.completions.create(
-                model=settings.default_model,
+                model=settings.fast_model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
                 tool_choice="auto",

@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Project, getOpsForProject } from "@/lib/data";
+import { useProjects } from "@/lib/ProjectContext";
+import { mapOps } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Users, Clock, Pencil, X } from "lucide-react";
@@ -16,7 +18,11 @@ const TASK_FIELDS = [
 const emptyForm = (): Record<string, string> => ({ name: "", priority: "Medium", status: "Pending" });
 
 export default function OpsAgentPage({ project }: { project: Project }) {
-  const ops = getOpsForProject(project);
+  const { getAgentResults } = useProjects();
+  const ops = useMemo(() => {
+    const results = getAgentResults(project.id);
+    return (results?.ops ? mapOps(results.ops) : null) ?? getOpsForProject(project);
+  }, [project, getAgentResults]);
   const [checklist, setChecklist] = useState<OpsTask[]>(ops.checklist);
   const [formOpen, setFormOpen] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>(emptyForm());

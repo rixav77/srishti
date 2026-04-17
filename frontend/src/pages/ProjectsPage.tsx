@@ -19,6 +19,7 @@ export default function ProjectsPage() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [geography, setGeography] = useState<string[]>([]);
+  const [city, setCity] = useState("");
   const [audienceSize, setAudienceSize] = useState("");
   const [customizationEnabled, setCustomizationEnabled] = useState(false);
 
@@ -28,6 +29,7 @@ export default function ProjectsPage() {
       name: name || `${category} Event`,
       category,
       geography,
+      city: city || undefined,
       audienceSize: parseInt(audienceSize),
       customizationEnabled,
       agentInstructions: {},
@@ -36,6 +38,7 @@ export default function ProjectsPage() {
     setName("");
     setCategory("");
     setGeography([]);
+    setCity("");
     setAudienceSize("");
     setCustomizationEnabled(false);
     navigate(`/project/${proj.id}/generating`);
@@ -87,6 +90,10 @@ export default function ProjectsPage() {
                       </label>
                     ))}
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">City (optional)</Label>
+                  <Input placeholder="e.g. Bengaluru, Mumbai, Delhi" value={city} onChange={(e) => setCity(e.target.value)} className="h-9 text-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Audience Size *</Label>

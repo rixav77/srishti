@@ -114,7 +114,7 @@ class SponsorAgent(BaseAgent):
         sponsors = []
         for _ in range(5):  # max 5 tool-call rounds
             response = client.chat.completions.create(
-                model=settings.default_model,
+                model=settings.fast_model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
                 tool_choice="auto",

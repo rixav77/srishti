@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Project, Venue, getVenuesForProject } from "@/lib/data";
+import { useProjects } from "@/lib/ProjectContext";
+import { mapVenues } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, Star } from "lucide-react";
 import AgentPageControls, { RemovableItem, ItemFormDialog, AddCustomItemButton } from "@/components/AgentPageControls";
@@ -15,7 +17,13 @@ const VENUE_FIELDS = [
 const emptyForm = (): Record<string, string> => ({ name: "", city: "", capacity: "0", pricePerDay: "", rating: "0" });
 
 export default function VenueAgentPage({ project }: { project: Project }) {
-  const [venues, setVenues] = useState<Venue[]>(getVenuesForProject(project));
+  const { getAgentResults } = useProjects();
+  const initialVenues = useMemo(() => {
+    const results = getAgentResults(project.id);
+    const real = results?.venues ? mapVenues(results.venues) : [];
+    return real.length > 0 ? real : getVenuesForProject(project);
+  }, [project, getAgentResults]);
+  const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [formOpen, setFormOpen] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>(emptyForm());
   const [editIndex, setEditIndex] = useState<number | null>(null);

@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Project, Sponsor, getSponsorsForProject } from "@/lib/data";
+import { useProjects } from "@/lib/ProjectContext";
+import { mapSponsors } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import AgentPageControls, { ItemFormDialog, AddCustomItemButton } from "@/components/AgentPageControls";
@@ -16,7 +18,13 @@ const SPONSOR_FIELDS = [
 const emptyForm = (): Record<string, string> => ({ name: "", tier: "Gold", estimatedBudget: "", matchScore: "0", reasoning: "" });
 
 export default function SponsorAgentPage({ project }: { project: Project }) {
-  const [sponsors, setSponsors] = useState<Sponsor[]>(getSponsorsForProject(project));
+  const { getAgentResults } = useProjects();
+  const initialSponsors = useMemo(() => {
+    const results = getAgentResults(project.id);
+    const real = results?.sponsors ? mapSponsors(results.sponsors) : [];
+    return real.length > 0 ? real : getSponsorsForProject(project);
+  }, [project, getAgentResults]);
+  const [sponsors, setSponsors] = useState<Sponsor[]>(initialSponsors);
   const [formOpen, setFormOpen] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>(emptyForm());
   const [editIndex, setEditIndex] = useState<number | null>(null);

@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Project, getGTMForProject } from "@/lib/data";
+import { useProjects } from "@/lib/ProjectContext";
+import { mapGTM } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import AgentPageControls, { ItemFormDialog, AddCustomItemButton } from "@/components/AgentPageControls";
@@ -17,7 +19,11 @@ const CHANNEL_FIELDS = [
 const emptyForm = (): Record<string, string> => ({ name: "", reach: "", cost: "", priority: "Medium" });
 
 export default function GTMAgentPage({ project }: { project: Project }) {
-  const gtm = getGTMForProject(project);
+  const { getAgentResults } = useProjects();
+  const gtm = useMemo(() => {
+    const results = getAgentResults(project.id);
+    return (results?.gtm ? mapGTM(results.gtm) : null) ?? getGTMForProject(project);
+  }, [project, getAgentResults]);
   const [channels, setChannels] = useState<Channel[]>(gtm.channels);
   const [formOpen, setFormOpen] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>(emptyForm());

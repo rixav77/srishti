@@ -98,7 +98,7 @@ class OpsAgent(BaseAgent):
         ops = {}
         # Ops agent usually doesn't need web tools — LLM can reason from context
         response = client.chat.completions.create(
-            model=settings.default_model,
+            model=settings.fast_model,
             messages=messages,
             temperature=0.3,
             max_tokens=2000,

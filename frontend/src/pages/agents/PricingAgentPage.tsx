@@ -1,8 +1,15 @@
+import { useMemo } from "react";
 import { Project, getPricingForProject } from "@/lib/data";
+import { useProjects } from "@/lib/ProjectContext";
+import { mapPricing } from "@/lib/api";
 import AgentPageControls from "@/components/AgentPageControls";
 
 export default function PricingAgentPage({ project }: { project: Project }) {
-  const pricing = getPricingForProject(project);
+  const { getAgentResults } = useProjects();
+  const pricing = useMemo(() => {
+    const results = getAgentResults(project.id);
+    return (results?.pricing ? mapPricing(results.pricing) : null) ?? getPricingForProject(project);
+  }, [project, getAgentResults]);
 
   return (
     <AgentPageControls project={project} agentId="pricing" agentName="Pricing & Footfall Agent" description="Ticket pricing model and expected attendance based on market analysis.">
@@ -13,8 +20,8 @@ export default function PricingAgentPage({ project }: { project: Project }) {
         <div className="grid grid-cols-3 divide-x">
           {[
             { label: "Early Bird", value: pricing.earlyBird },
-            { label: "Standard", value: pricing.standard },
-            { label: "VIP", value: pricing.vip },
+            { label: "Standard",   value: pricing.standard  },
+            { label: "VIP",        value: pricing.vip       },
           ].map((tier) => (
             <div key={tier.label} className="px-4 py-3 text-center">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{tier.label}</p>
@@ -31,7 +38,11 @@ export default function PricingAgentPage({ project }: { project: Project }) {
         <div className="grid grid-cols-3 divide-x">
           <div className="px-4 py-3">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Expected</p>
-            <p className="text-lg font-semibold text-foreground">{pricing.expectedAttendance.toLocaleString()}</p>
+            <p className="text-lg font-semibold text-foreground">
+              {typeof pricing.expectedAttendance === "number"
+                ? pricing.expectedAttendance.toLocaleString()
+                : pricing.expectedAttendance}
+            </p>
           </div>
           <div className="px-4 py-3">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Fill Rate</p>
