@@ -62,18 +62,18 @@ class ExhibitorAgent(BaseAgent):
         similar_events = db.get_events(
             domain=config.domain.value,
             city=config.city,
-            limit=15,
+            limit=5,
         )
         if not similar_events:
-            similar_events = db.get_events(domain=config.domain.value, limit=15)
+            similar_events = db.get_events(domain=config.domain.value, limit=5)
 
         company_pool: dict[str, int] = {}
-        for event in similar_events[:10]:
+        for event in similar_events[:5]:
             for sp in db.get_event_sponsors(event["id"]):
                 name = sp["company_name"]
                 company_pool[name] = company_pool.get(name, 0) + 1
 
-        top_companies = sorted(company_pool.items(), key=lambda x: x[1], reverse=True)[:15]
+        top_companies = sorted(company_pool.items(), key=lambda x: x[1], reverse=True)[:8]
 
         # Also use sponsor results from shared state if sponsor agent ran first
         sponsor_results = shared_state.get("sponsor_agent", {}).get("sponsors", [])
@@ -112,12 +112,12 @@ class ExhibitorAgent(BaseAgent):
         exhibitors = []
         for _ in range(4):
             response = client.chat.completions.create(
-                model=settings.fast_model,
+                model=settings.default_model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
                 tool_choice="auto",
                 temperature=0.3,
-                max_tokens=2000,
+                max_tokens=1500,
             )
             msg = response.choices[0].message
 
@@ -132,7 +132,7 @@ class ExhibitorAgent(BaseAgent):
                     messages.append({
                         "role":         "tool",
                         "tool_call_id": tc.id,
-                        "content":      json.dumps(result, default=str)[:2000],
+                        "content":      json.dumps(result, default=str)[:600],
                     })
                 continue
 

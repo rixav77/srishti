@@ -69,7 +69,7 @@ class VenueAgent(BaseAgent):
         similar_events = db.get_events(
             domain=config.domain.value,
             city=config.city,
-            limit=10,
+            limit=5,
         )
         past_venues: list[dict] = []
         seen_venues: set[str] = set()
@@ -102,7 +102,7 @@ class VenueAgent(BaseAgent):
                 {"name": v["name"], "city": v["city"], "country": v["country"]}
                 for v in db_venues
             ],
-            "venues_from_similar_events": past_venues[:10],
+            "venues_from_similar_events": past_venues[:5],
         }
 
         messages = [
@@ -121,12 +121,12 @@ class VenueAgent(BaseAgent):
         venues = []
         for _ in range(5):
             response = client.chat.completions.create(
-                model=settings.fast_model,
+                model=settings.default_model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
                 tool_choice="auto",
                 temperature=0.3,
-                max_tokens=2000,
+                max_tokens=1500,
             )
             msg = response.choices[0].message
 
@@ -141,7 +141,7 @@ class VenueAgent(BaseAgent):
                     messages.append({
                         "role":         "tool",
                         "tool_call_id": tc.id,
-                        "content":      json.dumps(result, default=str)[:2000],
+                        "content":      json.dumps(result, default=str)[:600],
                     })
                 continue
 

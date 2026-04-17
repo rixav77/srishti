@@ -65,21 +65,21 @@ class SponsorAgent(BaseAgent):
         similar_events = db.get_events(
             domain=config.domain.value,
             city=config.city,
-            limit=15,
+            limit=5,
         )
         if not similar_events and config.city:
             # Widen to country
-            similar_events = db.get_events(domain=config.domain.value, limit=15)
+            similar_events = db.get_events(domain=config.domain.value, limit=5)
 
         # Collect sponsors from those events
         sponsor_counts: dict[str, int] = {}
-        for event in similar_events[:10]:
+        for event in similar_events[:5]:
             for sp in db.get_event_sponsors(event["id"]):
                 name = sp["company_name"]
                 sponsor_counts[name] = sponsor_counts.get(name, 0) + 1
 
         # Sort by frequency across similar events
-        top_sponsors = sorted(sponsor_counts.items(), key=lambda x: x[1], reverse=True)[:15]
+        top_sponsors = sorted(sponsor_counts.items(), key=lambda x: x[1], reverse=True)[:8]
 
         context = {
             "event": {
@@ -114,12 +114,12 @@ class SponsorAgent(BaseAgent):
         sponsors = []
         for _ in range(5):  # max 5 tool-call rounds
             response = client.chat.completions.create(
-                model=settings.fast_model,
+                model=settings.default_model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
                 tool_choice="auto",
                 temperature=0.3,
-                max_tokens=2000,
+                max_tokens=1500,
             )
             msg = response.choices[0].message
 
@@ -135,7 +135,7 @@ class SponsorAgent(BaseAgent):
                     messages.append({
                         "role":         "tool",
                         "tool_call_id": tc.id,
-                        "content":      json.dumps(result, default=str)[:2000],
+                        "content":      json.dumps(result, default=str)[:600],
                     })
                 continue
 

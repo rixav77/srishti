@@ -94,12 +94,12 @@ class GTMAgent(BaseAgent):
         gtm = {}
         for _ in range(4):
             response = client.chat.completions.create(
-                model=settings.fast_model,
+                model=settings.default_model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
                 tool_choice="auto",
                 temperature=0.4,
-                max_tokens=2000,
+                max_tokens=1500,
             )
             msg = response.choices[0].message
 
@@ -114,7 +114,7 @@ class GTMAgent(BaseAgent):
                     messages.append({
                         "role":         "tool",
                         "tool_call_id": tc.id,
-                        "content":      json.dumps(result, default=str)[:2000],
+                        "content":      json.dumps(result, default=str)[:600],
                     })
                 continue
 

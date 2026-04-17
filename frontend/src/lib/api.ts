@@ -7,6 +7,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://srishti-productio
 const DOMAIN_MAP: Record<string, string> = {
   "AI / ML":     "conference",
   "Web3":        "conference",
+  "Hackathon":   "conference",
   "FinTech":     "conference",
   "HealthTech":  "conference",
   "Gaming":      "conference",
@@ -17,6 +18,7 @@ const DOMAIN_MAP: Record<string, string> = {
 const CATEGORY_MAP: Record<string, string> = {
   "AI / ML":     "AI/ML",
   "Web3":        "Web3",
+  "Hackathon":   "Hackathon",
   "FinTech":     "FinTech",
   "HealthTech":  "HealthTech",
   "Gaming":      "Gaming",
@@ -33,16 +35,22 @@ const GEO_MAP: Record<string, string> = {
 };
 
 export function buildEventConfig(project: Project) {
+  const isHackathon = project.category === "Hackathon";
+  const description = isHackathon && project.prizePool
+    ? `Hackathon with a prize pool of ₹${project.prizePool.toLocaleString()}.`
+    : undefined;
+
   return {
     domain:          DOMAIN_MAP[project.category]    || "conference",
     category:        CATEGORY_MAP[project.category]  || project.category,
     geography:       GEO_MAP[project.geography[0]]   || "India",
     city:            project.city                    || undefined,
     target_audience: project.audienceSize,
-    budget_min:      project.audienceSize * 500,
-    budget_max:      project.audienceSize * 2000,
+    budget_min:      project.budgetMin               ?? project.audienceSize * 500,
+    budget_max:      project.budgetMax               ?? project.audienceSize * 2000,
     currency:        "INR",
     event_name:      project.name,
+    description,
   };
 }
 

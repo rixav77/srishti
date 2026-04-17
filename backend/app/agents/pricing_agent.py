@@ -62,7 +62,7 @@ class PricingAgent(BaseAgent):
         similar_events = db.get_events(
             domain=config.domain.value,
             city=config.city,
-            limit=10,
+            limit=5,
         )
         price_benchmarks = [
             {
@@ -107,7 +107,7 @@ class PricingAgent(BaseAgent):
         pricing = {}
         for _ in range(4):
             response = client.chat.completions.create(
-                model=settings.fast_model,
+                model=settings.default_model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
                 tool_choice="auto",
@@ -127,7 +127,7 @@ class PricingAgent(BaseAgent):
                     messages.append({
                         "role":         "tool",
                         "tool_call_id": tc.id,
-                        "content":      json.dumps(result, default=str)[:2000],
+                        "content":      json.dumps(result, default=str)[:600],
                     })
                 continue
 

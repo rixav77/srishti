@@ -5,6 +5,9 @@ export interface Project {
   geography: string[];
   city?: string;
   audienceSize: number;
+  budgetMin?: number;
+  budgetMax?: number;
+  prizePool?: number;
   customizationEnabled: boolean;
   agentInstructions: Record<string, string>;
   createdAt: string;
@@ -35,7 +38,7 @@ export interface Venue {
   rating: number;
 }
 
-export const CATEGORIES = ["AI / ML", "Web3", "Music & Arts", "FinTech", "HealthTech", "Gaming", "Climate"];
+export const CATEGORIES = ["AI / ML", "Web3", "Hackathon", "Music & Arts", "FinTech", "HealthTech", "Gaming", "Climate"];
 export const GEOGRAPHIES = ["North America", "Europe", "Asia Pacific", "Middle East", "Latin America"];
 
 export const MOCK_PROJECTS: Project[] = [

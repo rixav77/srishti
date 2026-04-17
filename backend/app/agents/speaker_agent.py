@@ -105,20 +105,20 @@ class SpeakerAgent(BaseAgent):
         similar_events = db.get_events(
             domain=domain,
             city=config.city,
-            limit=15,
+            limit=5,
         )
         if not similar_events:
-            similar_events = db.get_events(domain=domain, limit=15)
+            similar_events = db.get_events(domain=domain, limit=5)
 
         talent_counts: dict[str, dict] = {}
-        for event in similar_events[:10]:
+        for event in similar_events[:5]:
             for t in db.get_event_talents(event["id"]):
                 name = t["name"]
                 if name not in talent_counts:
                     talent_counts[name] = {"count": 0, "type": t.get("type"), "role": t.get("role")}
                 talent_counts[name]["count"] += 1
 
-        top_talents = sorted(talent_counts.items(), key=lambda x: x[1]["count"], reverse=True)[:15]
+        top_talents = sorted(talent_counts.items(), key=lambda x: x[1]["count"], reverse=True)[:8]
 
         talent_type = {"conference": "speakers", "music_festival": "artists", "sporting_event": "athletes"}[domain]
 
@@ -157,12 +157,12 @@ class SpeakerAgent(BaseAgent):
         talents = []
         for _ in range(5):
             response = client.chat.completions.create(
-                model=settings.fast_model,
+                model=settings.default_model,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
                 tool_choice="auto",
                 temperature=0.3,
-                max_tokens=2000,
+                max_tokens=1500,
             )
             msg = response.choices[0].message
 
@@ -177,7 +177,7 @@ class SpeakerAgent(BaseAgent):
                     messages.append({
                         "role":         "tool",
                         "tool_call_id": tc.id,
-                        "content":      json.dumps(result, default=str)[:2000],
+                        "content":      json.dumps(result, default=str)[:600],
                     })
                 continue
 

@@ -21,7 +21,12 @@ export default function ProjectsPage() {
   const [geography, setGeography] = useState<string[]>([]);
   const [city, setCity] = useState("");
   const [audienceSize, setAudienceSize] = useState("");
+  const [budgetMin, setBudgetMin] = useState("");
+  const [budgetMax, setBudgetMax] = useState("");
+  const [prizePool, setPrizePool] = useState("");
   const [customizationEnabled, setCustomizationEnabled] = useState(false);
+
+  const isHackathon = category === "Hackathon";
 
   const handleCreate = () => {
     if (!category || geography.length === 0 || !audienceSize) return;
@@ -31,15 +36,15 @@ export default function ProjectsPage() {
       geography,
       city: city || undefined,
       audienceSize: parseInt(audienceSize),
+      budgetMin: budgetMin ? parseInt(budgetMin) : undefined,
+      budgetMax: budgetMax ? parseInt(budgetMax) : undefined,
+      prizePool: prizePool ? parseInt(prizePool) : undefined,
       customizationEnabled,
       agentInstructions: {},
     });
     setOpen(false);
-    setName("");
-    setCategory("");
-    setGeography([]);
-    setCity("");
-    setAudienceSize("");
+    setName(""); setCategory(""); setGeography([]); setCity("");
+    setAudienceSize(""); setBudgetMin(""); setBudgetMax(""); setPrizePool("");
     setCustomizationEnabled(false);
     navigate(`/project/${proj.id}/generating`);
   };
@@ -99,6 +104,19 @@ export default function ProjectsPage() {
                   <Label className="text-xs">Audience Size *</Label>
                   <Input type="number" placeholder="e.g. 1600" value={audienceSize} onChange={(e) => setAudienceSize(e.target.value)} className="h-9 text-sm" />
                 </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Budget Range (₹, optional)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input type="number" placeholder="Min e.g. 500000" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} className="h-9 text-sm" />
+                    <Input type="number" placeholder="Max e.g. 2000000" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} className="h-9 text-sm" />
+                  </div>
+                </div>
+                {isHackathon && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Prize Pool (₹)</Label>
+                    <Input type="number" placeholder="e.g. 1000000" value={prizePool} onChange={(e) => setPrizePool(e.target.value)} className="h-9 text-sm" />
+                  </div>
+                )}
                 <div className="flex items-center justify-between p-2.5 rounded border bg-muted/30">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5 text-primary" />
