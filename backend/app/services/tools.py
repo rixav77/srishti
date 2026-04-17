@@ -99,7 +99,7 @@ def _cache_set(key: str, value: Any, ttl: int = 3600) -> None:
 
 # ── tool implementations ───────────────────────────────────────────────────────
 
-def search_web(query: str, num_results: int = 5) -> list[dict]:
+def search_web(query: str, num_results: int = 3) -> list[dict]:
     """
     Neural web search via Exa. Returns list of {title, url, snippet, published_date}.
     Results cached for 1 hour in Redis.
@@ -252,7 +252,8 @@ TOOL_SCHEMAS = [
             "description": (
                 "Search the web for current information using neural search. "
                 "Use for finding recent news, sponsor budgets, artist tours, "
-                "venue details, or any information not in the database."
+                "venue details, or any information not in the database. "
+                "Use this instead of scraping — it returns snippets directly."
             ),
             "parameters": {
                 "type": "object",
@@ -263,31 +264,11 @@ TOOL_SCHEMAS = [
                     },
                     "num_results": {
                         "type": "integer",
-                        "description": "Number of results to return (1-10)",
-                        "default": 5,
+                        "description": "Number of results to return (1-5)",
+                        "default": 3,
                     },
                 },
                 "required": ["query"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "scrape_page",
-            "description": (
-                "Fetch and extract text from a specific URL. "
-                "Use when you have a URL from search results and need full page content."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "url": {
-                        "type": "string",
-                        "description": "Full URL to fetch",
-                    },
-                },
-                "required": ["url"],
             },
         },
     },
