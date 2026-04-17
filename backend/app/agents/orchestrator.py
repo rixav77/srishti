@@ -55,9 +55,17 @@ class Orchestrator:
         all_outputs: list[AgentOutput] = []
         shared_state: dict = {}
 
-        # Wave 1 — parallel
+        # Wave 1 — staggered parallel (3s apart to avoid Groq TPM burst)
         wave1 = _load_wave1_agents()
-        wave1_tasks = [agent.run(config, shared_state) for agent in wave1]
+
+        async def _run_staggered(agent, delay: float):
+            if delay > 0:
+                await asyncio.sleep(delay)
+            return await agent.run(config, shared_state)
+
+        wave1_tasks = [
+            _run_staggered(agent, i * 3.0) for i, agent in enumerate(wave1)
+        ]
         wave1_results = await asyncio.gather(*wave1_tasks, return_exceptions=True)
 
         for agent, result in zip(wave1, wave1_results):
@@ -100,11 +108,19 @@ class Orchestrator:
         shared_state: dict = {}
         all_outputs:  list[AgentOutput] = []
 
-        # ── Wave 1: parallel ──────────────────────────────────────────────────
+        # ── Wave 1: staggered parallel (3s apart to respect Groq TPM) ────────
         wave1   = _load_wave1_agents()
+
+        async def _delayed_run(agent, delay: float):
+            if delay > 0:
+                await asyncio.sleep(delay)
+            return await agent.run(config, shared_state)
+
         pending = {
-            asyncio.create_task(agent.run(config, shared_state), name=agent.name): agent
-            for agent in wave1
+            asyncio.create_task(
+                _delayed_run(agent, i * 3.0), name=agent.name
+            ): agent
+            for i, agent in enumerate(wave1)
         }
 
         while pending:
