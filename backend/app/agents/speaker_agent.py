@@ -27,7 +27,13 @@ logger = logging.getLogger(__name__)
 SYSTEM_PROMPTS = {
     "conference": """You are a Speaker Intelligence Agent for a conference planning platform.
 
-Recommend speakers based on the event's topic, audience size, and geography.
+Recommend speakers who are SPECIFICALLY relevant to the event's CATEGORY and TOPIC.
+- For an AI/ML event: recommend AI researchers, ML engineers, AI startup founders
+- For a Web3 event: recommend blockchain developers, DeFi founders, crypto researchers
+- For a FinTech event: recommend fintech founders, payment innovators
+- Do NOT recommend generic tech celebrities unless they directly work in this specific field
+- Match SCALE: small 500-person events get rising speakers, not keynote-priced celebrities
+
 Use tools to find current speaker availability, fee ranges, and recent talks.
 
 Output ONLY valid JSON:
@@ -104,10 +110,13 @@ class SpeakerAgent(BaseAgent):
         # ── Tier 1: RAG — pull talents from similar events ────────────────────
         similar_events = db.get_events(
             domain=domain,
+            category=config.category,
             city=config.city,
             limit=5,
         )
-        if not similar_events:
+        if len(similar_events) < 3:
+            similar_events = db.get_events(domain=domain, category=config.category, limit=5)
+        if len(similar_events) < 2:
             similar_events = db.get_events(domain=domain, limit=5)
 
         talent_counts: dict[str, dict] = {}

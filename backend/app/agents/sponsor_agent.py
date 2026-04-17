@@ -24,27 +24,31 @@ logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """You are a Sponsor Intelligence Agent for an AI-powered event planning platform.
 
-Your job: recommend the best sponsors for an event based on historical data and live research.
+Your job: recommend the best sponsors for a SPECIFIC event based on its category, audience, and geography.
+
+CRITICAL RULES:
+- Recommend sponsors that SPECIFICALLY match the event's category and audience
+- For a small hackathon (500 people), do NOT recommend mega-corps like AWS, Salesforce, Google unless they have a specific program for that category
+- For an AI/ML event, recommend AI-focused companies (Groq, Anthropic, Hugging Face, etc.)
+- For a music festival, recommend beverage/lifestyle brands
+- For a sporting event, recommend sportswear/broadcast brands
+- Match the SCALE: small events get startups/mid-size sponsors, large events get enterprise sponsors
+- Use the past sponsor data as a reference, but also use tools to find category-specific sponsors
 
 You have access to tools:
-- search_web: find current sponsor budgets, recent sponsorships, company news
-- get_company_info: get company industry, size, headquarters
+- search_web: find sponsors that specifically target this type of event
+- get_company_info: verify company relevance and size
 
-Process:
-1. Review the event config and past sponsors provided in context
-2. Call tools to enrich the top 3-5 sponsor candidates with current info
-3. Return a JSON array of ranked sponsor recommendations
-
-Output ONLY valid JSON in this exact format:
+Output ONLY valid JSON array:
 [
   {
     "rank": 1,
     "company_name": "...",
     "industry": "...",
     "recommended_tier": "title|gold|silver|bronze",
-    "why": "1-2 sentence explanation of fit",
-    "past_sponsorships": ["Event A 2025", "Event B 2026"],
-    "estimated_budget_range": "₹X - ₹Y lakhs or $X - $Y USD",
+    "why": "1-2 sentence explanation referencing the specific event category",
+    "past_sponsorships": ["Event A 2025"],
+    "estimated_budget_range": "₹X - ₹Y lakhs",
     "total_score": 0.0-1.0,
     "scores": {"relevance": 0.0, "budget_fit": 0.0, "audience_match": 0.0}
   }
@@ -62,13 +66,22 @@ class SponsorAgent(BaseAgent):
         settings = get_settings()
 
         # ── Tier 1: RAG — pull similar events + their sponsors ────────────────
+        # Try narrow first: domain + category + city
         similar_events = db.get_events(
             domain=config.domain.value,
+            category=config.category,
             city=config.city,
             limit=5,
         )
-        if not similar_events and config.city:
-            # Widen to country
+        # Widen: domain + category (any city)
+        if len(similar_events) < 3:
+            similar_events = db.get_events(
+                domain=config.domain.value,
+                category=config.category,
+                limit=5,
+            )
+        # Last resort: domain only
+        if len(similar_events) < 2:
             similar_events = db.get_events(domain=config.domain.value, limit=5)
 
         # Collect sponsors from those events

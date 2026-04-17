@@ -64,7 +64,7 @@ class Orchestrator:
             return await agent.run(config, shared_state)
 
         wave1_tasks = [
-            _run_staggered(agent, i * 3.0) for i, agent in enumerate(wave1)
+            _run_staggered(agent, i * 1.5) for i, agent in enumerate(wave1)
         ]
         wave1_results = await asyncio.gather(*wave1_tasks, return_exceptions=True)
 
@@ -118,7 +118,7 @@ class Orchestrator:
 
         pending = {
             asyncio.create_task(
-                _delayed_run(agent, i * 3.0), name=agent.name
+                _delayed_run(agent, i * 1.5), name=agent.name
             ): agent
             for i, agent in enumerate(wave1)
         }
