@@ -13,7 +13,7 @@ class Settings(BaseSettings):
 
     # LLM (Groq - free)
     groq_api_key: str = ""
-    default_model: str = "llama-3.3-70b-versatile"
+    default_model: str = "llama-3.1-8b-instant"
     fast_model: str = "llama-3.1-8b-instant"
 
     # Database
